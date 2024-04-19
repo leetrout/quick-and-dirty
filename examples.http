@@ -1,0 +1,22 @@
+@hostname = localhost
+@port = 1337
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+###
+
+POST http://{{host}}/data?table=baz1 HTTP/1.1
+content-type: application/json
+
+{
+    "name": "example",
+    "some": "value",
+    "boing": false,
+    "ftest": 3.55
+}
+
+###
+
+GET http://{{host}}/query?q=SELECT * FROM baz3 HTTP/1.1
+
+###
