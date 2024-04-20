@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="nord" class="h-full bg-gray-100">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="description" content="" />
+  <meta name="author" content="" />
+  <meta name="viewport"
+    content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
+  <title>{{block "title" $}}Quick & Dirty Data{{end}}</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+  <script src="//unpkg.com/alpinejs" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    document.addEventListener('alpine:init', () => {
+      // Using a page-wide data but a store could be more appropriate.
+      Alpine.data('pageState', () => ({
+        query: "",
+        result: {},
+        resultPlaceholder: "Submit a query",
+        queryAll(tableName) {
+          this.query = `SELECT * FROM ${tableName}`;
+          this.sendQuery();
+        },
+        async sendQuery() {
+          const response = await fetch(`/query?q=${this.query}`);
+          const data = await response.json();
+          this.result = data;
+          this.resultPlaceholder = false;
+          document.querySelector('.json').removeAttribute('data-highlighted');
+          Alpine.nextTick(hljs.highlightAll);
+        },
+        async createSampleTable() {
+          const sampleData = {
+            name: "Bobby Tables",
+            age: 6,
+            trouble_maker: true,
+          };
+          const response = await fetch("/data?table=sample_table", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(sampleData),
+          });
+          // Debated making the sample table creation a backend method
+          // with a link and redirect but I was lazy :)
+          window.location.reload();
+        }
+      }));
+    });
+  </script>
+  <style>
+    .json.hljs,
+    .json {
+      /* Override to match daisyui theme */
+      background: oklch(0.951276 0.007445 260.732);
+    }
+  </style>
+</head>
+
+<body x-data="pageState" class="h-full">
+  <div class="min-h-full">
+    <header x-data="{showMobile: false}" class="bg-secondary pb-24">
+      <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+        <div class="relative flex items-center justify-center py-5 lg:justify-between">
+          <!-- Logo -->
+          <div class="absolute left-0 flex-shrink-0 lg:static">
+            <h1 class="text-2xl">Quick & Dirty Data</h1>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="-mt-24 pb-8">
+      <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+        <!-- Main 3 column grid -->
+        <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 lg:gap-8">
+          <!-- Left column -->
+          <div class="grid grid-cols-1 gap-4 lg:col-span-2">
+            <section aria-labelledby="section-1-title">
+              <h2 class="sr-only" id="section-1-title">Section title</h2>
+              <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="p-6">
+                  <p class="text-xl pb-2">Query</p>
+                  <form @submit.prevent="sendQuery" class="mb-4">
+                    <textarea x-model="query" class="textarea textarea-bordered textarea-md w-full mb-2"
+                      placeholder="SELECT * FROM your_table"></textarea>
+                    <button class="btn btn-primary" type="submit">Submit Query</button>
+                  </form>
+
+                  <p class="text-xl pb-2">Results</p>
+                  <pre
+                    class="w-full"><code x-text="resultPlaceholder || JSON.stringify(result, null, 2)" class="language-json json w-full block text-sm p-4"></code></pre>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Right column -->
+          <div class="grid grid-cols-1 gap-4">
+            <section aria-labelledby="section-2-title">
+              <div class="overflow-hidden rounded-lg bg-white shadow">
+                <div class="p-6">
+                  <!-- Your content -->
+                  <p class="text-xl pb-2">Tables</p>
+                  <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                      <!-- head -->
+                      <thead>
+                        <tr>
+                          <th>Table Name</th>
+                          <td></td>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {{ range .tables }}
+                        <tr>
+                          <td class="font-mono	text-sm">{{.}}</td>
+                          <td>
+                            <button @click="queryAll('{{.}}')" class="btn btn-xs btn-secondary">SELECT *</button>
+                          </td>
+                        </tr>
+                        {{ else }}
+                        <tr>
+                          <td>You don't have any tables</td>
+                          <td></td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <button @click="createSampleTable" class="btn btn-xs btn-secondary">Create Sample
+                              Table</button>
+                          </td>
+                          <td></td>
+                        </tr>
+                        {{ end }}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
+        <div class="border-t border-gray-200 py-8 text-center text-sm text-gray-500 sm:text-left"><span
+            class="block sm:inline">&copy; 2024 Quick & Dirty Data.</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+
+</html>

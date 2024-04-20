@@ -87,6 +87,30 @@ func (db *DB) Insert(tableName string, JSONPayload map[string]interface{}) error
 	return err
 }
 
+// ListTables returns the list of table names.
+func (db *DB) ListTables() ([]string, error) {
+	tableNames := []string{}
+	rows, err := db.Connection.Query(
+		"SELECT table_name FROM information_schema.tables",
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tableName string
+		err = rows.Scan(&tableName)
+		if err != nil {
+			return nil, err
+		}
+
+		tableNames = append(tableNames, tableName)
+	}
+
+	return tableNames, nil
+}
+
 // TableExists checks for a table with the given name.
 func (db *DB) TableExists(tableName string) bool {
 	var foundTableName string
@@ -161,6 +185,7 @@ func (db *DB) GetQueryJSON(query string) ([]byte, error) {
 	if err != nil && err != sql.ErrNoRows {
 		return []byte{}, err
 	}
+	defer rows.Close()
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {

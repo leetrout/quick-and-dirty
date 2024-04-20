@@ -11,6 +11,17 @@ import (
 	"qad/pkg/data"
 )
 
+// home is the handler for the root URL /
+func home(c echo.Context) error {
+	tables, err := data.GetDB().ListTables()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
+	}
+	return c.Render(http.StatusOK, "base.html", map[string]interface{}{
+		"tables": tables,
+	})
+}
+
 // query is the handler for the /query endpoint.
 func query(c echo.Context) error {
 	query := c.QueryParam("q")

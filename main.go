@@ -23,6 +23,8 @@ func main() {
 
 	go func() {
 		<-c
+		// Explicit cleanup
+		db.Connection.Close()
 		os.Exit(1)
 	}()
 
