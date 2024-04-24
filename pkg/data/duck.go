@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 
 	_ "github.com/marcboeker/go-duckdb"
 )
@@ -61,6 +62,7 @@ func GetDB() *DB {
 }
 
 type DB struct {
+	sync.Mutex
 	Connection *sql.DB
 }
 
@@ -83,6 +85,8 @@ func (db *DB) Insert(tableName string, JSONPayload map[string]interface{}) error
 	vals += ")"
 
 	query := fmt.Sprintf("INSERT INTO %s %s VALUES %s", tableName, cols, vals)
+	db.Lock()
+	defer db.Unlock()
 	_, err := db.Connection.Exec(query, params...)
 	return err
 }
@@ -168,7 +172,9 @@ func (db *DB) EnsureColumns(tableName string, colMap ColumnMap) error {
 	// Diff with map
 	for col, kind := range colMap {
 		if _, ok := existingCols[col]; !ok {
+			db.Lock()
 			_, err := db.Connection.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", tableName, col, kind))
+			db.Unlock()
 			if err != nil {
 				return err
 			}
